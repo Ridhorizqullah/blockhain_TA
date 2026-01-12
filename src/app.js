@@ -15,6 +15,7 @@ let CONTRACT_ABI;
 
 // Pinata Gateway untuk fetch metadata
 const IPFS_GATEWAY = 'https://gray-brilliant-beaver-208.mypinata.cloud/ipfs/';
+
 // CID Metadata Buku (5 buku) - Copy CID ini saat menambahkan buku sebagai admin
 const BOOK_METADATA_CIDS = [
     'bafkreihk3n4tqlu7czesfjvf5w55rtt7xp6ewdrwmu2dqcfeputoxankkq', // Buku 1: 33 Cara Kaya Ala Bob Sadino
@@ -22,6 +23,15 @@ const BOOK_METADATA_CIDS = [
     'bafkreihrlag77vqh6y4dh3lbb2n3namibvv45zpccgtg6dgonwvyznoxhq', // Buku 3
     'bafkreicet65l74wqf57fmsg7bbcfsocqhyghd5iqhgb64kzg6atdgl5k4i', // Buku 4
     'bafkreid7ivm5mtjipzvsqpv6olswxfm5mwwvg6cm5xvwv6bmk2biwyoqc4'  // Buku 5
+];
+
+// PDF Links (Hardcoded as per user request)
+const BOOK_PDF_LINKS = [
+    'https://gray-brilliant-beaver-208.mypinata.cloud/ipfs/bafybeid7osiljcacm56t3jsaw5kyji76pgjd2jhtm6s5kbjxa7jx7xdrre',
+    'https://gray-brilliant-beaver-208.mypinata.cloud/ipfs/bafybeibtlwb7lyfq3gkrgxm7nh2v2ik5glafxz5gq3vqi6sd6qbvycnvka',
+    'https://gray-brilliant-beaver-208.mypinata.cloud/ipfs/bafybeicfdocwpce4fpn2hja4fzysrlv7t4xmlg33msyjxyaq3ohfvvpehm',
+    'https://gray-brilliant-beaver-208.mypinata.cloud/ipfs/bafybeiho52aljt2i7d3vbml43c43rgk57tz3ooovicqgvlmnlvrs6w5w3u',
+    'https://gray-brilliant-beaver-208.mypinata.cloud/ipfs/bafybeighralvs7hs7rtzazqshcdma35erarvqcqnkylk3t36kaxwfrfvry'
 ];
 
 // ========== GLOBAL VARIABLES ==========
@@ -426,6 +436,28 @@ function createBookCard(book, metadata) {
     // Truncate IPFS Hash for display
     const shortIpfs = book.ipfsHash.substring(0, 10) + '...' + book.ipfsHash.substring(book.ipfsHash.length - 4);
 
+    // Metadata URL (Catalog only shows metadata)
+    const metadataUrl = IPFS_GATEWAY + book.ipfsHash;
+
+    // Admin Direct PDF Access
+    let adminPdfBtn = '';
+    if (isAdmin) {
+        // Resolve PDF URL for Admin
+        let pdfUrl = '#';
+        const bookIndex = parseInt(book.id) - 1;
+        if (bookIndex >= 0 && bookIndex < BOOK_PDF_LINKS.length) {
+            pdfUrl = BOOK_PDF_LINKS[bookIndex];
+        }
+
+        adminPdfBtn = `
+            <div style="margin-top: 10px; text-align: center;">
+                <button onclick="openPdfViewer('${pdfUrl}')" class="btn btn-sm btn-secondary" style="font-size: 0.8rem; padding: 4px 8px;">
+                    <i class="fas fa-lock-open"></i> Admin: View PDF
+                </button>
+            </div>
+        `;
+    }
+
     card.innerHTML = `
         <div class="book-icon-placeholder">
             <i class="fas fa-book-open"></i>
@@ -448,8 +480,8 @@ function createBookCard(book, metadata) {
             <span class="ipfs-label">IPFS CID</span>
             <div class="ipfs-value">
                 ${shortIpfs}
-                <a href="${IPFS_GATEWAY + book.ipfsHash}" target="_blank" style="color: var(--primary);"><i class="fas fa-external-link-alt"></i></a>
             </div>
+            ${adminPdfBtn}
         </div>
         
         <div class="book-actions" id="actions-${book.id}" style="width: 100%;">
@@ -549,6 +581,21 @@ async function loadCurrentBorrow() {
                 console.error('Error fetching metadata:', error);
             }
 
+            // Resolve PDF URL for Active Loan
+            let pdfUrl = '#';
+            const bookIndex = parseInt(currentBorrowId) - 1;
+            if (bookIndex >= 0 && bookIndex < BOOK_PDF_LINKS.length) {
+                pdfUrl = BOOK_PDF_LINKS[bookIndex];
+            } else if (metadata && metadata.pdf) {
+                if (metadata.pdf.startsWith('ipfs://')) {
+                    pdfUrl = IPFS_GATEWAY + metadata.pdf.replace('ipfs://', '');
+                } else {
+                    pdfUrl = metadata.pdf;
+                }
+            } else {
+                pdfUrl = IPFS_GATEWAY + book.ipfsHash;
+            }
+
             document.getElementById('currentBorrowInfo').innerHTML = `
                 <div class="history-card" style="border-color: var(--accent-orange);">
                     <div class="history-left">
@@ -562,7 +609,12 @@ async function loadCurrentBorrow() {
                             </div>
                         </div>
                     </div>
-                    <button class="btn btn-danger" onclick="returnBook(${currentBorrowId})">Return Book</button>
+                    <div class="history-actions" style="display: flex; gap: 10px;">
+                        <button onclick="openPdfViewer('${pdfUrl}')" class="btn btn-primary" style="padding: 8px 16px; height: fit-content;">
+                            <i class="fas fa-book-reader"></i> Read PDF
+                        </button>
+                        <button class="btn btn-danger" onclick="returnBook(${currentBorrowId})">Return Book</button>
+                    </div>
                 </div>
             `;
 
@@ -691,6 +743,32 @@ function createHistoryCard(borrow, metadata, borrowerName) {
     `;
 
     return card;
+}
+
+// ========== PDF VIEWER FUNCTIONS ==========
+
+function openPdfViewer(url) {
+    const modal = document.getElementById('pdfModal');
+    const iframe = document.getElementById('pdfIframe');
+
+    if (modal && iframe) {
+        iframe.src = url;
+        modal.style.display = 'flex';
+    } else {
+        console.error('PDF Modal elements not found!');
+        // Fallback to new tab if modal fails
+        window.open(url, '_blank');
+    }
+}
+
+function closePdfViewer() {
+    const modal = document.getElementById('pdfModal');
+    const iframe = document.getElementById('pdfIframe');
+
+    if (modal && iframe) {
+        modal.style.display = 'none';
+        iframe.src = ''; // Stop loading/playing
+    }
 }
 
 // ========== UTILITY FUNCTIONS ==========

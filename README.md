@@ -19,6 +19,7 @@ Proyek ini dibangun menggunakan versi perangkat lunak berikut:
 *   **Admin Panel**: Menambah buku baru dan melihat daftar anggota (khusus admin).
 *   **Riwayat Transparan**: Riwayat peminjaman dapat dilihat oleh semua orang.
 *   **Integrasi IPFS**: Metadata buku disimpan menggunakan IPFS (Pinata).
+*   **Baca Buku (PDF)**: Akses baca buku tersedia eksklusif setelah peminjaman aktif.
 *   **Dark Mode UI**: Antarmuka modern yang nyaman di mata.
 
 ## 📦 Cara Menjalankan Proyek
