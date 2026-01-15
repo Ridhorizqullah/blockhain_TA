@@ -20,6 +20,10 @@ contract Library {
     uint public memberCount; // Total jumlah anggota terdaftar
     uint public borrowCount; // Total jumlah peminjaman yang pernah terjadi
     
+    // Konstanta untuk testing: 1 menit = 1 ETH (dalam wei)
+    uint public constant BORROW_DURATION = 60; // 60 detik = 1 menit
+    uint public constant DEPOSIT_PER_MINUTE = 0.001 ether; // 0.001 ETH per menit
+    
     // ========== STRUCTS ==========
     
     /**
@@ -56,6 +60,8 @@ contract Library {
         uint borrowTime; // Waktu peminjaman
         uint returnTime; // Waktu pengembalian (0 jika belum dikembalikan)
         bool returned; // Status pengembalian
+        uint dueDate; // Waktu jatuh tempo (borrowTime + BORROW_DURATION)
+        uint deposit; // Jumlah deposit yang dibayarkan
     }
     
     // ========== MAPPINGS ==========
@@ -64,13 +70,14 @@ contract Library {
     mapping(address => Member) public members; // Alamat => Data anggota
     mapping(uint => BorrowHistory) public borrowHistory; // ID peminjaman => Riwayat
     mapping(address => uint) public currentBorrow; // Alamat => ID buku yang sedang dipinjam (0 jika tidak ada)
+    mapping(address => uint) public deposits; // Alamat => Jumlah deposit yang disimpan
     
     // ========== EVENTS ==========
     
     event BookAdded(uint indexed bookId, string ipfsHash, uint stock, uint timestamp);
     event MemberRegistered(address indexed memberAddress, string name, uint timestamp);
-    event BookBorrowed(uint indexed borrowId, address indexed borrower, uint indexed bookId, uint timestamp);
-    event BookReturned(uint indexed borrowId, address indexed borrower, uint indexed bookId, uint timestamp);
+    event BookBorrowed(uint indexed borrowId, address indexed borrower, uint indexed bookId, uint timestamp, uint deposit, uint dueDate);
+    event BookReturned(uint indexed borrowId, address indexed borrower, uint indexed bookId, uint timestamp, uint refundAmount);
     event StockUpdated(uint indexed bookId, uint newStock);
     
     // ========== MODIFIERS ==========
@@ -220,16 +227,24 @@ contract Library {
      * @dev Meminjam buku
      * @param _bookId ID buku yang akan dipinjam
      * @notice Anggota hanya bisa meminjam 1 buku dalam satu waktu
+     * @notice Memerlukan deposit sebesar DEPOSIT_PER_MINUTE
      */
-    function borrowBook(uint _bookId) public onlyMember bookExists(_bookId) {
+    function borrowBook(uint _bookId) public payable onlyMember bookExists(_bookId) {
         require(books[_bookId].stock > 0, "Stok buku habis");
         require(currentBorrow[msg.sender] == 0, "Anda masih memiliki buku yang belum dikembalikan");
+        require(msg.value >= DEPOSIT_PER_MINUTE, "Deposit tidak mencukupi");
         
         // Update stok buku
         books[_bookId].stock--;
         
         // Update current borrow
         currentBorrow[msg.sender] = _bookId;
+        
+        // Simpan deposit
+        deposits[msg.sender] = msg.value;
+        
+        // Hitung due date (borrowTime + BORROW_DURATION)
+        uint dueDate = block.timestamp + BORROW_DURATION;
         
         // Tambah borrow count
         borrowCount++;
@@ -241,24 +256,32 @@ contract Library {
             bookId: _bookId,
             borrowTime: block.timestamp,
             returnTime: 0,
-            returned: false
+            returned: false,
+            dueDate: dueDate,
+            deposit: msg.value
         });
         
         // Update total borrowed member
         members[msg.sender].totalBorrowed++;
         
-        emit BookBorrowed(borrowCount, msg.sender, _bookId, block.timestamp);
+        emit BookBorrowed(borrowCount, msg.sender, _bookId, block.timestamp, msg.value, dueDate);
     }
     
     /**
      * @dev Mengembalikan buku
      * @param _bookId ID buku yang akan dikembalikan
+     * @notice Refund penuh jika tepat waktu, partial jika terlambat
      */
     function returnBook(uint _bookId) public onlyMember bookExists(_bookId) {
         require(currentBorrow[msg.sender] == _bookId, "Anda tidak meminjam buku ini");
         
+        uint depositAmount = deposits[msg.sender];
+        require(depositAmount > 0, "Tidak ada deposit untuk dikembalikan");
+        
         // Update stok buku
         books[_bookId].stock++;
+        
+        uint refundAmount = 0;
         
         // Cari borrow history yang aktif
         for (uint i = borrowCount; i >= 1; i--) {
@@ -269,13 +292,28 @@ contract Library {
                 borrowHistory[i].returnTime = block.timestamp;
                 borrowHistory[i].returned = true;
                 
-                emit BookReturned(i, msg.sender, _bookId, block.timestamp);
+                // Hitung refund berdasarkan keterlambatan
+                if (block.timestamp <= borrowHistory[i].dueDate) {
+                    // Tepat waktu - refund penuh
+                    refundAmount = depositAmount;
+                } else {
+                    // Terlambat - refund 50%
+                    refundAmount = depositAmount / 2;
+                }
+                
+                emit BookReturned(i, msg.sender, _bookId, block.timestamp, refundAmount);
                 break;
             }
         }
         
-        // Reset current borrow
+        // Reset current borrow dan deposit
         currentBorrow[msg.sender] = 0;
+        deposits[msg.sender] = 0;
+        
+        // Transfer refund ke peminjam
+        if (refundAmount > 0) {
+            payable(msg.sender).transfer(refundAmount);
+        }
     }
     
     /**
@@ -357,6 +395,56 @@ contract Library {
         }
         
         return bookHistory;
+    }
+    
+    // ========== DEPOSIT & DURATION FUNCTIONS ==========
+    
+    /**
+     * @dev Menghitung deposit yang diperlukan untuk meminjam
+     * @return uint Jumlah deposit dalam wei
+     */
+    function calculateRequiredDeposit() public pure returns (uint) {
+        return DEPOSIT_PER_MINUTE;
+    }
+    
+    /**
+     * @dev Mengecek apakah peminjaman user sudah overdue
+     * @param _memberAddress Alamat anggota
+     * @return bool True jika overdue, false jika tidak
+     */
+    function isOverdue(address _memberAddress) public view returns (bool) {
+        uint currentBookId = currentBorrow[_memberAddress];
+        if (currentBookId == 0) return false;
+        
+        // Cari borrow history yang aktif
+        for (uint i = borrowCount; i >= 1; i--) {
+            if (borrowHistory[i].borrower == _memberAddress && 
+                borrowHistory[i].bookId == currentBookId && 
+                !borrowHistory[i].returned) {
+                return block.timestamp > borrowHistory[i].dueDate;
+            }
+        }
+        return false;
+    }
+    
+    /**
+     * @dev Mendapatkan due date untuk peminjaman aktif user
+     * @param _memberAddress Alamat anggota
+     * @return uint Due date timestamp (0 jika tidak ada peminjaman aktif)
+     */
+    function getDueDate(address _memberAddress) public view returns (uint) {
+        uint currentBookId = currentBorrow[_memberAddress];
+        if (currentBookId == 0) return 0;
+        
+        // Cari borrow history yang aktif
+        for (uint i = borrowCount; i >= 1; i--) {
+            if (borrowHistory[i].borrower == _memberAddress && 
+                borrowHistory[i].bookId == currentBookId && 
+                !borrowHistory[i].returned) {
+                return borrowHistory[i].dueDate;
+            }
+        }
+        return 0;
     }
     
     // ========== UTILITY FUNCTIONS ==========

@@ -1,80 +1,175 @@
-# Smart Library - Sistem Perpustakaan Blockchain
+# 📚 Smart Library - Blockchain System
 
-Proyek ini adalah aplikasi perpustakaan terdesentralisasi (DApp) yang berjalan di jaringan Ethereum (Sepolia Testnet). Aplikasi ini memungkinkan pengguna untuk meminjam buku, melihat riwayat peminjaman, dan mendaftar sebagai anggota, dengan semua data transaksi tercatat secara transparan di blockchain.
+Sistem perpustakaan terdesentralisasi berbasis blockchain Ethereum (Sepolia Testnet) dengan smart contract untuk manajemen buku, anggota, dan peminjaman.
 
-## 🛠 Teknologi & Dependensi
+## 🎨 Dual Interface
 
-Proyek ini dibangun menggunakan versi perangkat lunak berikut:
+### 👤 User Interface (Dark Theme)
+- **File**: `src/index.html`
+- **Theme**: Dark mode dengan warna hijau (#00DC82)
+- **Akses**: `http://localhost:8080` atau `npm run dev`
+- **Fitur**:
+  - Dashboard dengan statistik
+  - Katalog buku
+  - Peminjaman buku dengan deposit
+  - Riwayat peminjaman
+  - PDF viewer untuk membaca buku
 
-*   **Truffle**: v5.11.5 (core: 5.11.5)
-*   **Ganache**: v7.9.1
-*   **Solidity**: 0.8.20 (solc-js)
-*   **Node.js**: v18.20.0
-*   **Web3.js**: v1.10.0
+### 👨‍💼 Admin Interface (Light Theme)
+- **File**: `src/admin.html`
+- **Theme**: Light mode dengan warna ungu (#8B5CF6)
+- **Akses**: `http://localhost:8080/admin.html`
+- **Fitur**:
+  - Dashboard admin
+  - Tambah buku baru
+  - Manajemen member
+  - Monitoring peminjaman
+  - System status
 
-## 🚀 Fitur Utama
+## 🔧 Teknologi
 
-*   **Peminjaman Buku**: Peminjaman buku tercatat di blockchain.
-*   **Keanggotaan**: Sistem registrasi anggota on-chain.
-*   **Admin Panel**: Menambah buku baru dan melihat daftar anggota (khusus admin).
-*   **Riwayat Transparan**: Riwayat peminjaman dapat dilihat oleh semua orang.
-*   **Integrasi IPFS**: Metadata buku disimpan menggunakan IPFS (Pinata).
-*   **Baca Buku (PDF)**: Akses baca buku tersedia eksklusif setelah peminjaman aktif.
-*   **Dark Mode UI**: Antarmuka modern yang nyaman di mata.
+- **Blockchain**: Ethereum Sepolia Testnet
+- **Smart Contract**: Solidity ^0.8.20
+- **Frontend**: HTML, CSS, JavaScript
+- **Web3**: Web3.js v1.10.0
+- **Storage**: IPFS (Pinata) untuk metadata buku
+- **Development**: Truffle, Ganache
 
-## 📦 Cara Menjalankan Proyek
+## 📋 Fitur Utama
 
-1.  **Clone Repositori**
-    ```bash
-    git clone https://github.com/Ridhorizqullah/blockhain_TA.git
-    cd library-blockchain
-    ```
+### ⏱️ Testing Mode (1 Menit = 0.001 ETH)
+- **Durasi Peminjaman**: 60 detik (1 menit)
+- **Deposit**: 0.001 ETH per menit
+- **Refund**:
+  - ✅ Tepat waktu: 100% refund
+  - ⚠️ Terlambat: 50% refund
 
-2.  **Install Dependensi**
-    ```bash
-    npm install
-    ```
+### 📖 Manajemen Buku
+- Upload buku dengan IPFS hash
+- Set stok buku
+- Track ketersediaan real-time
 
-3.  **Konfigurasi Smart Contract**
-    Pastikan Anda memiliki Truffle terinstall secara global.
-    ```bash
-    npm install -g truffle
-    ```
-    Deploy kontrak ke jaringan (misal: Sepolia atau Development/Ganache):
-    ```bash
-    truffle migrate --network sepolia
-    ```
+### 👥 Manajemen Member
+- Registrasi member on-chain
+- Track riwayat peminjaman
+- Validasi status member
 
-4.  **Jalankan Frontend**
-    ```bash
-    npm run dev
-    ```
-    Akses aplikasi di `http://127.0.0.1:8080`.
+### 🔄 Peminjaman
+- Deposit otomatis saat pinjam
+- Due date tracking
+- Overdue detection
+- Auto-refund saat return
 
-## 🗺️ Roadmap
+## 🚀 Installation
 
-Berikut adalah rencana pengembangan proyek ke depan:
+```bash
+# Install dependencies
+npm install
 
-- [x] **Fase 1: Pengembangan Inti**
-    - [x] Pembuatan Smart Contract (Peminjaman, Pengembalian, Stok).
-    - [x] Deployment ke Sepolia Testnet.
-    - [x] Dasar Frontend dengan Web3.js.
+# Setup environment variables
+cp .env.example .env
+# Edit .env dengan Alchemy API key dan mnemonic Anda
 
-- [x] **Fase 2: Peningkatan UI/UX**
-    - [x] Redesign Antarmuka (Dark Mode).
-    - [x] Penambahan Sidebar dan Navigasi Responsif.
-    - [x] Fitur "Quick Fill" untuk Admin.
+# Compile smart contract
+truffle compile
 
-- [ ] **Fase 3: Fitur Lanjutan**
-    - [ ] **Upload IPFS Otomatis**: Memungkinkan admin mengupload gambar/metadata langsung dari UI.
-    - [ ] **Sistem Denda**: Implementasi denda keterlambatan menggunakan token ETH/ERC-20.
-    - [ ] **Rating & Review**: Memberikan ulasan buku yang tersimpan di blockchain.
+# Deploy ke Sepolia
+truffle migrate --network sepolia
 
-- [ ] **Fase 4: Skalabilitas & Keamanan**
-    - [ ] Audit Keamanan Smart Contract.
-    - [ ] Optimasi Gas Fee.
-    - [ ] Peluncuran ke Mainnet.
+# Run development server
+npm run dev
+```
 
-## 📄 Lisensi
+## 🔑 Environment Variables
 
-Proyek ini dibuat untuk tujuan Tugas Akhir / Edukasi.
+```env
+# Alchemy API Key (dari https://www.alchemy.com/)
+ALCHEMY_API_KEY=your_alchemy_api_key_here
+
+# Mnemonic phrase dari MetaMask (12 kata)
+MNEMONIC=your twelve word mnemonic phrase goes here
+```
+
+## 📝 Smart Contract Functions
+
+### Public Functions
+- `registerMember(string _name)` - Registrasi member
+- `borrowBook(uint _bookId)` - Pinjam buku (payable)
+- `returnBook(uint _bookId)` - Kembalikan buku
+- `getBook(uint _bookId)` - Info buku
+- `getCurrentBorrow(address)` - Buku yang sedang dipinjam
+- `isOverdue(address)` - Cek keterlambatan
+- `getDueDate(address)` - Tanggal jatuh tempo
+
+### Admin Functions
+- `addBook(string _ipfsHash, uint _stock)` - Tambah buku
+- `updateBookStock(uint _bookId, uint _newStock)` - Update stok
+
+### View Functions
+- `getLibraryStats()` - Statistik perpustakaan
+- `getAllBorrowHistory()` - Semua riwayat
+- `getMemberBorrowHistory(address)` - Riwayat member
+- `calculateRequiredDeposit()` - Hitung deposit
+
+## ⚠️ Important Notes
+
+### Auto-Return
+**Smart contract TIDAK bisa auto-return secara otomatis!**
+- Blockchain tidak bisa menjalankan kode secara otomatis
+- User harus **manual return** melalui UI
+- Contract hanya **mendeteksi overdue** dan **mengurangi refund**
+- Testing script mensimulasikan auto-return dengan wait timer
+
+### Testing Mode
+- Durasi 1 menit untuk testing cepat
+- Production: ubah `BORROW_DURATION` ke 7 days (604800 detik)
+- Deposit disesuaikan dengan durasi
+
+## 🎯 Usage Flow
+
+### User Flow
+1. Connect wallet (MetaMask)
+2. Register sebagai member
+3. Browse katalog buku
+4. Pinjam buku (bayar deposit 0.001 ETH)
+5. Baca buku via PDF viewer
+6. Return buku sebelum due date
+7. Terima refund (100% atau 50%)
+
+### Admin Flow
+1. Connect wallet admin
+2. Akses admin panel
+3. Tambah buku baru dengan IPFS hash
+4. Monitor member & peminjaman
+5. Lihat statistik sistem
+
+## 🐛 Troubleshooting
+
+### "Insufficient balance"
+- Pastikan wallet punya Sepolia ETH
+- Faucet: https://sepoliafaucet.com/
+
+### "User denied transaction"
+- Approve transaksi di MetaMask
+- Cek gas fee cukup
+
+### "Book not found"
+- Pastikan book ID valid
+- Cek dengan `getBook(bookId)`
+
+### Testing gagal
+- Cek .env sudah benar
+- Pastikan contract sudah deploy
+- Cek balance wallet cukup
+
+## 📄 License
+
+MIT License
+
+## 👥 Team
+
+Blockchain Library System - Tugas Akhir
+
+---
+
+**Happy Coding! 🚀**

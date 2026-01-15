@@ -1,0 +1,87 @@
+@import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
+
+@theme {
+  --font-sans: 'Inter', sans-serif;
+  --font-heading: 'Outfit', sans-serif;
+
+  --color-user-bg: #F8FAFC;
+  --color-user-surface: #FFFFFF;
+  --color-user-primary: #059669;
+  --color-user-secondary: #14B8A6;
+  --color-user-accent: #F59E0B;
+  --color-user-text: #0F172A;
+  --color-user-muted: #64748B;
+  --color-user-border: #E2E8F0;
+
+  --color-admin-bg: #0F172A;
+  --color-admin-surface: #1E293B;
+  --color-admin-primary: #7C3AED;
+  --color-admin-secondary: #4F46E5;
+  --color-admin-accent: #10B981;
+  --color-admin-text: #F8FAFC;
+  --color-admin-muted: #94A3B8;
+  --color-admin-border: #334155;
+  
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-pulse-slow: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-20px); }
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-white/70 backdrop-blur-lg border border-white/20 shadow-xl;
+  }
+  
+  .glass-dark {
+    @apply bg-slate-900/70 backdrop-blur-lg border border-white/10 shadow-xl;
+  }
+
+  .text-gradient-user {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-user-primary to-user-secondary;
+  }
+
+  .text-gradient-admin {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-admin-primary to-admin-secondary;
+  }
+
+  /* Animation Utilities */
+  .animate-in {
+    animation-name: enter;
+    animation-duration: 150ms;
+    --tw-enter-opacity: initial;
+    --tw-enter-scale: initial;
+    --tw-enter-rotate: initial;
+    --tw-enter-translate-x: initial;
+    --tw-enter-translate-y: initial;
+  }
+
+  .fade-in {
+    --tw-enter-opacity: 0;
+    animation-name: enter;
+  }
+
+  .slide-in-from-top-5 {
+    --tw-enter-translate-y: -1.25rem;
+    animation-name: enter;
+  }
+
+  .duration-300 {
+    animation-duration: 300ms;
+  }
+
+  .duration-500 {
+    animation-duration: 500ms;
+  }
+
+  @keyframes enter {
+    from {
+      opacity: var(--tw-enter-opacity, 1);
+      transform: translate3d(var(--tw-enter-translate-x, 0), var(--tw-enter-translate-y, 0), 0) scale3d(var(--tw-enter-scale, 1), var(--tw-enter-scale, 1), 1) rotate(var(--tw-enter-rotate, 0));
+    }
+  }
+}
